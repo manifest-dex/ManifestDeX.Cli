@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ManifestDeX.Cli.Application/ManifestDeX.Cli.Application.csproj" />
+    <Project Path="src/ManifestDeX.Cli.Bootstrapper/ManifestDeX.Cli.Bootstrapper.csproj" />
+    <Project Path="src/ManifestDeX.Cli.Domain/ManifestDeX.Cli.Domain.csproj" />
+    <Project Path="src/ManifestDeX.Cli.Infrastructure/ManifestDeX.Cli.Infrastructure.csproj" />
+    <Project Path="src/ManifestDeX.Cli.Presentation/ManifestDeX.Cli.Presentation.csproj" />
+    <Project Path="src/ManifestDeX.Cli/ManifestDeX.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ManifestDeX.Cli.IntegrationTests/ManifestDeX.Cli.IntegrationTests.csproj" />
+    <Project Path="tests/ManifestDeX.Cli.UnitTests/ManifestDeX.Cli.UnitTests.csproj" />
+  </Folder>
+</Solution>
