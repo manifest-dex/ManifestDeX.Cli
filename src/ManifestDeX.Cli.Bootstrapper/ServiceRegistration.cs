@@ -14,7 +14,7 @@ public static class ServiceRegistration
         var apiBaseUrl = Environment.GetEnvironmentVariable("MANIFESTDEX_API_URL")?.Trim();
         if (string.IsNullOrWhiteSpace(apiBaseUrl))
         {
-            apiBaseUrl = "https://manifestdex.com/";
+            apiBaseUrl = "https://api.manifestdex.com/";
         }
 
         if (!apiBaseUrl.EndsWith('/'))
