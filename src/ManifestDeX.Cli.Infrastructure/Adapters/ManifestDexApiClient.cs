@@ -200,4 +200,169 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         public string Status { get; set; } = "unknown";
         public DateTime TimestampUtc { get; set; }
     }
+
+    public async Task<IReadOnlyList<AvailableManifest>> GetAvailableManifestsAsync(uint appId, uint[]? depotIds = null, CancellationToken cancellationToken = default)
+    {
+        var path = $"api/cli/download/available/{appId}";
+        if (depotIds != null && depotIds.Length > 0)
+        {
+            path += $"?depotIds={string.Join(",", depotIds)}";
+        }
+
+        var response = await SendAuthenticatedAsync(path, cancellationToken);
+        var payload = await response.Content.ReadFromJsonAsync<AvailableManifestsResponse>(JsonOptions, cancellationToken)
+            ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
+
+        return payload.Manifests.Select(x => new AvailableManifest(x.DepotId, x.ManifestId, x.SizeBytes)).ToList();
+    }
+
+    public async Task<DownloadQueueResponse> PrepareDownloadAsync(uint? appId, List<uint>? depotIds, List<AvailableManifest>? manifests, CancellationToken cancellationToken = default)
+    {
+        var requestBody = new CliPrepareDownloadRequest
+        {
+            AppId = appId,
+            DepotIds = depotIds,
+            Manifests = manifests?.Select(x => new CliManifestItemDto { DepotId = x.DepotId, ManifestId = x.ManifestId }).ToList()
+        };
+
+        var key = await _apiKeyStore.GetApiKeyAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new CliException("API key not configured. Run: manifestdex auth set-key <key>", CliExitCode.ValidationError);
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/cli/download/prepare");
+        request.Headers.Add("X-Manifestdex-Key", key);
+        request.Content = JsonContent.Create(requestBody, options: JsonOptions);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.SendAsync(request, cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new CliException("Network error while contacting ManifestDeX API.", CliExitCode.NetworkError, ex);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            var errorMessage = TryExtractErrorMessage(content) ?? $"Request failed with HTTP {(int)response.StatusCode}.";
+
+            throw response.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => new CliException(errorMessage, CliExitCode.Unauthorized),
+                HttpStatusCode.Forbidden => new CliException(errorMessage, CliExitCode.Forbidden),
+                (HttpStatusCode)429 => new CliException(errorMessage, CliExitCode.RateLimited),
+                _ => new CliException(errorMessage, CliExitCode.UnknownError)
+            };
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<CliQueueResponse>(JsonOptions, cancellationToken)
+            ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
+
+        return new DownloadQueueResponse(
+            payload.Success,
+            payload.TaskId,
+            payload.Status,
+            payload.ProgressText,
+            payload.ProgressPercentage,
+            payload.DownloadUrl,
+            payload.Error
+        );
+    }
+
+    public async Task<DownloadQueueResponse> GetDownloadStatusAsync(string taskId, CancellationToken cancellationToken = default)
+    {
+        var response = await SendAuthenticatedAsync($"api/cli/download/status/{taskId}", cancellationToken);
+        var payload = await response.Content.ReadFromJsonAsync<CliQueueResponse>(JsonOptions, cancellationToken)
+            ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
+
+        return new DownloadQueueResponse(
+            payload.Success,
+            payload.TaskId,
+            payload.Status,
+            payload.ProgressText,
+            payload.ProgressPercentage,
+            payload.DownloadUrl,
+            payload.Error
+        );
+    }
+
+    public async Task<Stream> DownloadStreamAsync(string downloadUrl, CancellationToken cancellationToken = default)
+    {
+        var path = downloadUrl.StartsWith('/') ? downloadUrl.Substring(1) : downloadUrl;
+
+        var key = await _apiKeyStore.GetApiKeyAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new CliException("API key not configured. Run: manifestdex auth set-key <key>", CliExitCode.ValidationError);
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("X-Manifestdex-Key", key);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new CliException("Network error while downloading manifest stream.", CliExitCode.NetworkError, ex);
+        }
+
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                var errorMessage = TryExtractErrorMessage(content) ?? $"Download failed with HTTP {(int)response.StatusCode}.";
+                throw new CliException(errorMessage, CliExitCode.UnknownError);
+            }
+
+            var ms = new MemoryStream();
+            await response.Content.CopyToAsync(ms, cancellationToken);
+            ms.Position = 0;
+            return ms;
+        }
+    }
+
+    private sealed class AvailableManifestsResponse
+    {
+        public bool Success { get; set; }
+        public List<AvailableManifestItem> Manifests { get; set; } = [];
+    }
+
+    private sealed class AvailableManifestItem
+    {
+        public uint DepotId { get; set; }
+        public ulong ManifestId { get; set; }
+        public ulong SizeBytes { get; set; }
+    }
+
+    private sealed class CliPrepareDownloadRequest
+    {
+        public uint? AppId { get; set; }
+        public List<uint>? DepotIds { get; set; }
+        public List<CliManifestItemDto>? Manifests { get; set; } = [];
+    }
+
+    private sealed class CliManifestItemDto
+    {
+        public uint DepotId { get; set; }
+        public ulong ManifestId { get; set; }
+    }
+
+    private sealed class CliQueueResponse
+    {
+        public bool Success { get; set; }
+        public string? TaskId { get; set; }
+        public string? Status { get; set; }
+        public string? ProgressText { get; set; }
+        public double ProgressPercentage { get; set; }
+        public string? DownloadUrl { get; set; }
+        public string? Error { get; set; }
+    }
 }

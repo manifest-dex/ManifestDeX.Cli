@@ -9,4 +9,9 @@ public interface IManifestDexApiClient
     Task<IReadOnlyList<DepotKey>> GetKeysAsync(uint appId, CancellationToken cancellationToken = default);
     Task<UsageSnapshot> GetUsageAsync(CancellationToken cancellationToken = default);
     Task<HealthSnapshot> GetHealthAsync(CancellationToken cancellationToken = default);
+    
+    Task<IReadOnlyList<Entities.AvailableManifest>> GetAvailableManifestsAsync(uint appId, uint[]? depotIds = null, CancellationToken cancellationToken = default);
+    Task<Entities.DownloadQueueResponse> PrepareDownloadAsync(uint? appId, List<uint>? depotIds, List<Entities.AvailableManifest>? manifests, CancellationToken cancellationToken = default);
+    Task<Entities.DownloadQueueResponse> GetDownloadStatusAsync(string taskId, CancellationToken cancellationToken = default);
+    Task<Stream> DownloadStreamAsync(string downloadUrl, CancellationToken cancellationToken = default);
 }

@@ -27,6 +27,7 @@ public sealed class HelpCommand : Command<HelpCommand.Settings>
         commands.AddRow("search <query>", "find, s", "Search games and list appId + available key count.");
         commands.AddRow("info <appId>", "i", "Show detailed game information.");
         commands.AddRow("get <appId>", "keys, g", "List depot decryption keys (depotId:key).");
+        commands.AddRow("manifestfile [appId]", "mf", "Download .manifest files (either by AppID or custom list of specific versions).");
         commands.AddRow("usage", "quota, u", "Show daily limit, usage, remaining quota, reset time.");
         commands.AddRow("health", "ping", "Check CLI API availability.");
         commands.AddRow("auth set-key <key>", "auth set", "Store API key locally.");
@@ -45,6 +46,9 @@ public sealed class HelpCommand : Command<HelpCommand.Settings>
         examples.AddRow("manifestdex search \"elden ring\"", "Find matching games.");
         examples.AddRow("manifestdex info 730", "Get details for appId 730.");
         examples.AddRow("manifestdex get 730 --json", "Fetch keys as JSON.");
+        examples.AddRow("manifestdex manifestfile 730", "Download latest manifests for appId 730.");
+        examples.AddRow("manifestdex mf 730 --depots 731", "Download filtered depots.");
+        examples.AddRow("manifestdex mf --manifests 731:9238 --zip", "Download specific version as zip.");
         examples.AddRow("manifestdex usage", "Read current daily quota state.");
         examples.AddRow("manifestdex health", "Ping API health endpoint.");
         AnsiConsole.Write(examples);

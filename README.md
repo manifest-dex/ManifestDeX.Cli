@@ -60,6 +60,7 @@ ManifestDeX.Cli.exe search "counter strike"
 | `search <query>`     | `find`, `s`  | Search games and return appId + key count.                                        |
 | `info <appId>`       | `i`          | Return app details (`name`, `headerImageUrl`, `totalDecryptionKeys`, depot list). |
 | `get <appId>`        | `keys`, `g`  | Return depot keys (`depotId:key`).                                                |
+| `manifestfile [appId]`| `mf`         | Download .manifest files (either by AppID or custom list of specific versions).   |
 | `usage`              | `quota`, `u` | Return daily usage and reset time.                                                |
 | `health`             | `ping`       | Return API health status.                                                         |
 | `help`               | `h`          | Show detailed CLI help.                                                           |
@@ -74,8 +75,20 @@ ManifestDeX.Cli.exe search "counter strike"
 Examples:
 
 ```powershell
+# Get game details and keys
 ManifestDeX.Cli.exe info 730
 ManifestDeX.Cli.exe get 730 --json
+
+# Download latest manifests for all depots of App ID 730 (extracted individually)
+ManifestDeX.Cli.exe manifestfile 730
+
+# Download latest manifests for only specific depots 731 and 732 under App ID 730
+ManifestDeX.Cli.exe mf 730 --depots 731,732
+
+# Download specific depot:manifest versions directly and save as a zipped archive
+ManifestDeX.Cli.exe mf --manifests 731:89273928172938,732:89239823982389 --zip --out-dir "C:\MyManifests"
+
+# Quota usage and API status
 ManifestDeX.Cli.exe usage --output table
 ManifestDeX.Cli.exe health --json
 ```

@@ -36,6 +36,7 @@ public static class ServiceRegistration
         services.AddTransient<GetHealthUseCase>();
         services.AddTransient<SetApiKeyUseCase>();
         services.AddTransient<GetAuthStatusUseCase>();
+        services.AddTransient<DownloadManifestsUseCase>();
 
         return services;
     }
