@@ -61,6 +61,10 @@ ManifestDeX.Cli.exe search "counter strike"
 | `info <appId>`       | `i`          | Return app details (`name`, `headerImageUrl`, `totalDecryptionKeys`, depot list). |
 | `get <appId>`        | `keys`, `g`  | Return depot keys (`depotId:key`).                                                |
 | `manifestfile [appId]`| `mf`         | Download .manifest files (either by AppID or custom list of specific versions).   |
+| `online-fix list`    | `online-fix l` | List Steam games with Online-Fix available (paginated).                         |
+| `online-fix download <appId>` | `online-fix d` | Generate a temporary single-use download link for an Online-Fix archive. |
+| `bypass list`        | `bypass l`   | List Steam games with Bypass files available (paginated).                           |
+| `bypass download <appId>` | `bypass d` | Generate a temporary single-use download link for a Bypass archive.       |
 | `usage`              | `quota`, `u` | Return daily usage and reset time.                                                |
 | `health`             | `ping`       | Return API health status.                                                         |
 | `help`               | `h`          | Show detailed CLI help.                                                           |
@@ -88,6 +92,14 @@ ManifestDeX.Cli.exe mf 730 --depots 731,732
 # Download specific depot:manifest versions directly and save as a zipped archive
 ManifestDeX.Cli.exe mf --manifests 731:89273928172938,732:89239823982389 --zip --out-dir "C:\MyManifests"
 
+# List available online fixes and bypasses (paginated, max 10 per page, free of charge)
+ManifestDeX.Cli.exe online-fix list --page 1 --page-size 10
+ManifestDeX.Cli.exe bypass list --page 1
+
+# Generate a temporary download link for an online fix or bypass (30-min expiry, consumes 1 daily credit)
+ManifestDeX.Cli.exe online-fix download 730
+ManifestDeX.Cli.exe bypass download 730
+
 # Quota usage and API status
 ManifestDeX.Cli.exe usage --output table
 ManifestDeX.Cli.exe health --json
@@ -113,6 +125,9 @@ Example output:
 │ Total decryption keys │ 13                                                                                           │
 │ Depots                │ 731, 732, 733, 734, 735, 228988, 228990, 2347770, 2347771, 2347772, 2347773, 2347774,        │
 │                       │ 2347779                                                                                      │
+│ Online-Fix            │ Available - Size: 14.77 MB                                                                   │
+│ Online-Fix Instruct.  │ This is a standard single-file ZIP archive. You can extract it directly to your target dir.  │
+│ Bypass                │ Available - Size: 1.00 MB - Info: Launch game from cs2.exe.                                  │
 └───────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 

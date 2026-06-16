@@ -28,6 +28,10 @@ public sealed class HelpCommand : Command<HelpCommand.Settings>
         commands.AddRow("info <appId>", "i", "Show detailed game information.");
         commands.AddRow("get <appId>", "keys, g", "List depot decryption keys (depotId:key).");
         commands.AddRow("manifestfile [appId]", "mf", "Download .manifest files (either by AppID or custom list of specific versions).");
+        commands.AddRow("online-fix list", "online-fix l", "List games with online-fix available (paginated, free).");
+        commands.AddRow("online-fix download <appId>", "online-fix d", "Generate temporary download link for online-fix (costs 1 credit).");
+        commands.AddRow("bypass list", "bypass l", "List games with bypass available (paginated, free).");
+        commands.AddRow("bypass download <appId>", "bypass d", "Generate temporary download link for bypass (costs 1 credit).");
         commands.AddRow("usage", "quota, u", "Show daily limit, usage, remaining quota, reset time.");
         commands.AddRow("health", "ping", "Check CLI API availability.");
         commands.AddRow("auth set-key <key>", "auth set", "Store API key locally.");
@@ -49,6 +53,8 @@ public sealed class HelpCommand : Command<HelpCommand.Settings>
         examples.AddRow("manifestdex manifestfile 730", "Download latest manifests for appId 730.");
         examples.AddRow("manifestdex mf 730 --depots 731", "Download filtered depots.");
         examples.AddRow("manifestdex mf --manifests 731:9238 --zip", "Download specific version as zip.");
+        examples.AddRow("manifestdex online-fix list --page 1", "List available online-fixes.");
+        examples.AddRow("manifestdex bypass download 730", "Get download link for appId 730 bypass.");
         examples.AddRow("manifestdex usage", "Read current daily quota state.");
         examples.AddRow("manifestdex health", "Ping API health endpoint.");
         AnsiConsole.Write(examples);

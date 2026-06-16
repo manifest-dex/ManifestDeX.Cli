@@ -35,7 +35,55 @@ public static class ConsoleOutput
                 infoTable.AddRow("Header image URL", string.IsNullOrWhiteSpace(info.HeaderImageUrl) ? "-" : Markup.Escape(info.HeaderImageUrl));
                 infoTable.AddRow("Total decryption keys", $"[green]{info.TotalDecryptionKeys}[/]");
                 infoTable.AddRow("Depots", Markup.Escape(depots));
+
+                if (info.OnlineFixDetails != null)
+                {
+                    infoTable.AddRow("Online-Fix", $"[green]Available[/] - Size: [yellow]{FormatBytes(info.OnlineFixDetails.TotalSize)}[/]");
+                    infoTable.AddRow("Online-Fix Instructions", $"[yellow]{Markup.Escape(info.OnlineFixDetails.Instructions)}[/]");
+                }
+                else
+                {
+                    infoTable.AddRow("Online-Fix", "[red]Not Available[/]");
+                }
+
+                if (info.BypassDetails != null)
+                {
+                    var sizeStr = info.BypassDetails.FileSize.HasValue ? FormatBytes(info.BypassDetails.FileSize.Value) : "Unknown size";
+                    infoTable.AddRow("Bypass", $"[green]Available[/] - Size: [yellow]{sizeStr}[/] - Info: {Markup.Escape(info.BypassDetails.AdditionalInfo)}");
+                }
+                else
+                {
+                    infoTable.AddRow("Bypass", "[red]Not Available[/]");
+                }
+
                 AnsiConsole.Write(infoTable);
+                break;
+            case Domain.Entities.CliPaginatedList<Domain.Entities.OnlineFixListItem> fixList:
+                var fixTable = new Table().RoundedBorder().AddColumns("AppId", "Name");
+                foreach (var item in fixList.Results)
+                {
+                    fixTable.AddRow(
+                        $"[deepskyblue1]{item.AppId}[/]",
+                        Markup.Escape(item.Name));
+                }
+                AnsiConsole.Write(fixTable);
+                AnsiConsole.MarkupLine($"[grey]Page {fixList.Page} of {fixList.TotalPages} (Total: {fixList.TotalCount})[/]");
+                break;
+            case Domain.Entities.CliPaginatedList<Domain.Entities.BypassListItem> bypassList:
+                var bypassTable = new Table().RoundedBorder().AddColumns("AppId", "Name", "Info");
+                foreach (var item in bypassList.Results)
+                {
+                    bypassTable.AddRow(
+                        $"[deepskyblue1]{item.AppId}[/]",
+                        Markup.Escape(item.Name),
+                        Markup.Escape(item.AdditionalInfo));
+                }
+                AnsiConsole.Write(bypassTable);
+                AnsiConsole.MarkupLine($"[grey]Page {bypassList.Page} of {bypassList.TotalPages} (Total: {bypassList.TotalCount})[/]");
+                break;
+            case Domain.Entities.DownloadLink link:
+                AnsiConsole.MarkupLine($"[green]Download link generated successfully! (Expires in 30 minutes, single-use)[/]");
+                AnsiConsole.MarkupLine($"Link: [deepskyblue1]{Markup.Escape(link.Url)}[/]");
                 break;
             case IEnumerable<Domain.Entities.DepotKey> keys:
                 var keyTable = new Table().RoundedBorder().AddColumns("DepotId", "Key");
@@ -65,6 +113,20 @@ public static class ConsoleOutput
                 AnsiConsole.MarkupLine(Markup.Escape(payload.ToString() ?? string.Empty));
                 break;
         }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes <= 0) return "0 B";
+        string[] suffix = { "B", "KB", "MB", "GB", "TB" };
+        int i = 0;
+        double dblSByte = bytes;
+        while (dblSByte >= 1024 && i < suffix.Length - 1)
+        {
+            dblSByte /= 1024.0;
+            i++;
+        }
+        return $"{dblSByte:0.##} {suffix[i]}";
     }
 
     public static void PrintText(string text) => AnsiConsole.MarkupLine(Markup.Escape(text));

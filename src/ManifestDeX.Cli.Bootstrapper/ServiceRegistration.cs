@@ -37,6 +37,10 @@ public static class ServiceRegistration
         services.AddTransient<SetApiKeyUseCase>();
         services.AddTransient<GetAuthStatusUseCase>();
         services.AddTransient<DownloadManifestsUseCase>();
+        services.AddTransient<ListOnlineFixesUseCase>();
+        services.AddTransient<ListBypassesUseCase>();
+        services.AddTransient<GetOnlineFixDownloadLinkUseCase>();
+        services.AddTransient<GetBypassDownloadLinkUseCase>();
 
         return services;
     }

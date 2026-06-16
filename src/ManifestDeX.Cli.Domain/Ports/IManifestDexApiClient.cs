@@ -14,4 +14,9 @@ public interface IManifestDexApiClient
     Task<Entities.DownloadQueueResponse> PrepareDownloadAsync(uint? appId, List<uint>? depotIds, List<Entities.AvailableManifest>? manifests, CancellationToken cancellationToken = default);
     Task<Entities.DownloadQueueResponse> GetDownloadStatusAsync(string taskId, CancellationToken cancellationToken = default);
     Task<Stream> DownloadStreamAsync(string downloadUrl, CancellationToken cancellationToken = default);
+
+    Task<CliPaginatedList<OnlineFixListItem>> ListOnlineFixesAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<CliPaginatedList<BypassListItem>> ListBypassesAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<DownloadLink> GetOnlineFixDownloadLinkAsync(uint appId, CancellationToken cancellationToken = default);
+    Task<DownloadLink> GetBypassDownloadLinkAsync(uint appId, CancellationToken cancellationToken = default);
 }

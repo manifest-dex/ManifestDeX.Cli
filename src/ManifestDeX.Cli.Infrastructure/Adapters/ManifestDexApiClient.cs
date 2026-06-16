@@ -33,7 +33,27 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         var payload = await response.Content.ReadFromJsonAsync<GameInfoResponse>(JsonOptions, cancellationToken)
             ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
 
-        return new GameInfo(payload.AppId, payload.Name, payload.HeaderImageUrl, payload.TotalDecryptionKeys, payload.DepotIds);
+        var onlineFix = payload.OnlineFixDetails != null ? new OnlineFixDetails(
+            payload.OnlineFixDetails.TotalSize,
+            payload.OnlineFixDetails.IsSplitArchive,
+            payload.OnlineFixDetails.Instructions
+        ) : null;
+
+        var bypass = payload.BypassDetails != null ? new BypassDetails(
+            payload.BypassDetails.FileSize,
+            payload.BypassDetails.AdditionalInfo,
+            payload.BypassDetails.LastUpdated
+        ) : null;
+
+        return new GameInfo(
+            payload.AppId, 
+            payload.Name, 
+            payload.HeaderImageUrl, 
+            payload.TotalDecryptionKeys, 
+            payload.DepotIds,
+            onlineFix,
+            bypass
+        );
     }
 
     public async Task<IReadOnlyList<DepotKey>> GetKeysAsync(uint appId, CancellationToken cancellationToken = default)
@@ -171,6 +191,53 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         public string HeaderImageUrl { get; set; } = string.Empty;
         public int TotalDecryptionKeys { get; set; }
         public List<uint> DepotIds { get; set; } = [];
+        public OnlineFixDetailsDto? OnlineFixDetails { get; set; }
+        public BypassDetailsDto? BypassDetails { get; set; }
+    }
+
+    private sealed class OnlineFixDetailsDto
+    {
+        public long TotalSize { get; set; }
+        public bool IsSplitArchive { get; set; }
+        public string Instructions { get; set; } = string.Empty;
+    }
+
+    private sealed class BypassDetailsDto
+    {
+        public long? FileSize { get; set; }
+        public string AdditionalInfo { get; set; } = string.Empty;
+        public DateTime LastUpdated { get; set; }
+    }
+
+    private sealed class OnlineFixListItemDto
+    {
+        public uint AppId { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class BypassListItemDto
+    {
+        public uint AppId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string AdditionalInfo { get; set; } = string.Empty;
+    }
+
+    private sealed class PaginatedResponse<T>
+    {
+        public bool Success { get; set; }
+        public List<T> Results { get; set; } = [];
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class DownloadLinkResponse
+    {
+        public bool Success { get; set; }
+        public string DownloadUrl { get; set; } = string.Empty;
+        public string? Error { get; set; }
     }
 
     private sealed class GetResponse
@@ -327,6 +394,87 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
             ms.Position = 0;
             return ms;
         }
+    }
+
+    public async Task<CliPaginatedList<OnlineFixListItem>> ListOnlineFixesAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var response = await SendAuthenticatedAsync($"api/cli/online-fix/list?page={page}&pageSize={pageSize}", cancellationToken);
+        var payload = await response.Content.ReadFromJsonAsync<PaginatedResponse<OnlineFixListItemDto>>(JsonOptions, cancellationToken)
+            ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
+
+        var results = payload.Results.Select(x => new OnlineFixListItem(x.AppId, x.Name)).ToList();
+        return new CliPaginatedList<OnlineFixListItem>(results, payload.Page, payload.PageSize, payload.TotalCount, payload.TotalPages);
+    }
+
+    public async Task<CliPaginatedList<BypassListItem>> ListBypassesAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var response = await SendAuthenticatedAsync($"api/cli/bypass/list?page={page}&pageSize={pageSize}", cancellationToken);
+        var payload = await response.Content.ReadFromJsonAsync<PaginatedResponse<BypassListItemDto>>(JsonOptions, cancellationToken)
+            ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
+
+        var results = payload.Results.Select(x => new BypassListItem(
+            x.AppId,
+            x.Name,
+            x.AdditionalInfo
+        )).ToList();
+
+        return new CliPaginatedList<BypassListItem>(results, payload.Page, payload.PageSize, payload.TotalCount, payload.TotalPages);
+    }
+
+    public async Task<DownloadLink> GetOnlineFixDownloadLinkAsync(uint appId, CancellationToken cancellationToken = default)
+    {
+        var response = await SendAuthenticatedPostAsync($"api/cli/online-fix/download-link/{appId}", cancellationToken);
+        var payload = await response.Content.ReadFromJsonAsync<DownloadLinkResponse>(JsonOptions, cancellationToken)
+            ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
+
+        return new DownloadLink(payload.DownloadUrl);
+    }
+
+    public async Task<DownloadLink> GetBypassDownloadLinkAsync(uint appId, CancellationToken cancellationToken = default)
+    {
+        var response = await SendAuthenticatedPostAsync($"api/cli/bypass/download-link/{appId}", cancellationToken);
+        var payload = await response.Content.ReadFromJsonAsync<DownloadLinkResponse>(JsonOptions, cancellationToken)
+            ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
+
+        return new DownloadLink(payload.DownloadUrl);
+    }
+
+    private async Task<HttpResponseMessage> SendAuthenticatedPostAsync(string path, CancellationToken cancellationToken)
+    {
+        var key = await _apiKeyStore.GetApiKeyAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new CliException("API key not configured. Run: manifestdex auth set-key <key>", CliExitCode.ValidationError);
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, path);
+        request.Headers.Add("X-Manifestdex-Key", key);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.SendAsync(request, cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new CliException("Network error while contacting ManifestDeX API.", CliExitCode.NetworkError, ex);
+        }
+
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
+        }
+
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+        var errorMessage = TryExtractErrorMessage(content) ?? $"Request failed with HTTP {(int)response.StatusCode}.";
+
+        throw response.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized => new CliException(errorMessage, CliExitCode.Unauthorized),
+            HttpStatusCode.Forbidden => new CliException(errorMessage, CliExitCode.Forbidden),
+            (HttpStatusCode)429 => new CliException(errorMessage, CliExitCode.RateLimited),
+            _ => new CliException(errorMessage, CliExitCode.UnknownError)
+        };
     }
 
     private sealed class AvailableManifestsResponse

@@ -40,6 +40,28 @@ public static class SpectreCliConfigurator
             .WithDescription("Show detailed usage documentation and examples.")
             .WithAlias("h");
 
+        config.AddBranch("online-fix", fix =>
+        {
+            fix.SetDescription("Online-fix operations.");
+            fix.AddCommand<OnlineFixListCommand>("list")
+                .WithDescription("List games with online-fix available (paginated, no credits).")
+                .WithAlias("l");
+            fix.AddCommand<OnlineFixDownloadCommand>("download")
+                .WithDescription("Generate a temporary download link for an online-fix (costs 1 credit).")
+                .WithAlias("d");
+        });
+
+        config.AddBranch("bypass", bypass =>
+        {
+            bypass.SetDescription("Bypass operations.");
+            bypass.AddCommand<BypassListCommand>("list")
+                .WithDescription("List games with bypass available (paginated, no credits).")
+                .WithAlias("l");
+            bypass.AddCommand<BypassDownloadCommand>("download")
+                .WithDescription("Generate a temporary download link for a bypass (costs 1 credit).")
+                .WithAlias("d");
+        });
+
         config.AddBranch("auth", auth =>
         {
             auth.SetDescription("Authentication and API key operations.");
