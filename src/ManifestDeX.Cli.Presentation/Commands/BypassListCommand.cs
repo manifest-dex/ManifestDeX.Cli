@@ -21,6 +21,9 @@ public sealed class BypassListCommand : AsyncCommand<BypassListCommand.Settings>
 
         [CommandOption("-s|--page-size <PAGE_SIZE>")]
         public int? PageSize { get; init; }
+
+        [CommandOption("-q|--query <QUERY>")]
+        public string? Query { get; init; }
     }
 
     protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -28,9 +31,9 @@ public sealed class BypassListCommand : AsyncCommand<BypassListCommand.Settings>
         try
         {
             var page = settings.Page ?? 1;
-            var pageSize = settings.PageSize ?? 10;
+            var pageSize = settings.PageSize ?? 100;
 
-            var results = await _useCase.ExecuteAsync(page, pageSize, cancellationToken);
+            var results = await _useCase.ExecuteAsync(page, pageSize, settings.Query, cancellationToken);
             ConsoleOutput.PrintObject(results, settings.ResolveOutputMode());
             return (int)CliExitCode.Success;
         }

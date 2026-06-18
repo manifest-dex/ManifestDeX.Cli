@@ -396,9 +396,14 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         }
     }
 
-    public async Task<CliPaginatedList<OnlineFixListItem>> ListOnlineFixesAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<CliPaginatedList<OnlineFixListItem>> ListOnlineFixesAsync(int page, int pageSize, string? search = null, CancellationToken cancellationToken = default)
     {
-        var response = await SendAuthenticatedAsync($"api/cli/online-fix/list?page={page}&pageSize={pageSize}", cancellationToken);
+        var path = $"api/cli/online-fix/list?page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            path += $"&search={Uri.EscapeDataString(search)}";
+        }
+        var response = await SendAuthenticatedAsync(path, cancellationToken);
         var payload = await response.Content.ReadFromJsonAsync<PaginatedResponse<OnlineFixListItemDto>>(JsonOptions, cancellationToken)
             ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
 
@@ -406,9 +411,14 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         return new CliPaginatedList<OnlineFixListItem>(results, payload.Page, payload.PageSize, payload.TotalCount, payload.TotalPages);
     }
 
-    public async Task<CliPaginatedList<BypassListItem>> ListBypassesAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<CliPaginatedList<BypassListItem>> ListBypassesAsync(int page, int pageSize, string? search = null, CancellationToken cancellationToken = default)
     {
-        var response = await SendAuthenticatedAsync($"api/cli/bypass/list?page={page}&pageSize={pageSize}", cancellationToken);
+        var path = $"api/cli/bypass/list?page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            path += $"&search={Uri.EscapeDataString(search)}";
+        }
+        var response = await SendAuthenticatedAsync(path, cancellationToken);
         var payload = await response.Content.ReadFromJsonAsync<PaginatedResponse<BypassListItemDto>>(JsonOptions, cancellationToken)
             ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
 

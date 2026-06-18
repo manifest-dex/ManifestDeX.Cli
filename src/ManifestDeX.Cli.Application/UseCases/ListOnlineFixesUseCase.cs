@@ -12,11 +12,11 @@ public sealed class ListOnlineFixesUseCase
         _apiClient = apiClient;
     }
 
-    public Task<CliPaginatedList<OnlineFixListItem>> ExecuteAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public Task<CliPaginatedList<OnlineFixListItem>> ExecuteAsync(int page, int pageSize, string? search = null, CancellationToken cancellationToken = default)
     {
         if (page <= 0) page = 1;
-        if (pageSize <= 0 || pageSize > 10) pageSize = 10;
+        if (pageSize <= 0 || pageSize > 100) pageSize = 100;
 
-        return _apiClient.ListOnlineFixesAsync(page, pageSize, cancellationToken);
+        return _apiClient.ListOnlineFixesAsync(page, pageSize, search, cancellationToken);
     }
 }
