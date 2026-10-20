@@ -14,7 +14,7 @@ public sealed class BypassDownloadCommand : AsyncCommand<BypassDownloadCommand.S
         _useCase = useCase;
     }
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : BaseOutputSettings
     {
         [CommandArgument(0, "<appId>")]
         public string AppId { get; init; } = string.Empty;
@@ -30,7 +30,7 @@ public sealed class BypassDownloadCommand : AsyncCommand<BypassDownloadCommand.S
             }
 
             var link = await _useCase.ExecuteAsync(appId, cancellationToken);
-            ConsoleOutput.PrintObject(link, Parsing.OutputMode.Table);
+            ConsoleOutput.PrintObject(link, settings.ResolveOutputMode());
             return (int)CliExitCode.Success;
         }
         catch (CliException ex)

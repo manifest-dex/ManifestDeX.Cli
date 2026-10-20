@@ -14,6 +14,20 @@ GitHub repository: [https://github.com/manifest-dex/ManifestDeX.Cli](https://git
 - Human-readable table output and script-friendly JSON output.
 - Server-side auth, quota, and anti-abuse enforcement.
 
+## Bypass archive passwords
+
+`info <appId>`, `bypass list`, and `bypass download <appId>` read the API's automatic archive encryption detection. Encrypted bypass archives show `Archive password: manifestdex.com` in download output; game info and list tables also show the password. Plain archives do not show a password.
+
+Use `bypass download <appId> --json`, `bypass list --json`, or `info <appId> --json` for scripts. JSON output includes `IsPasswordProtected` and `ArchivePassword` on the download link, list items, and `BypassDetails` respectively, following the CLI's existing PascalCase format.
+
+| IsPasswordProtected | ArchivePassword | Meaning |
+| --- | --- | --- |
+| `true` | `"manifestdex.com"` | Password-protected bypass archive |
+| `false` | `null` | Unencrypted archive |
+| `null` | `null` | Detection unavailable, not yet cached, or an older API response |
+
+The bypass list uses cached detection. Request `info` or a download link to trigger inspection when status is unknown. The same password applies to encrypted ZIPs inside `.parts.zip` bundles. No admin flag or password argument is required. The CLI generates download links; extract downloaded files with your preferred archive tool.
+
 ## Access and API Key
 
 - The repository is open source.
@@ -99,6 +113,7 @@ ManifestDeX.Cli.exe bypass list --page 1
 # Generate a temporary download link for an online fix or bypass (30-min expiry, consumes 1 daily credit)
 ManifestDeX.Cli.exe online-fix download 730
 ManifestDeX.Cli.exe bypass download 730
+ManifestDeX.Cli.exe bypass download 730 --json
 
 # Quota usage and API status
 ManifestDeX.Cli.exe usage --output table

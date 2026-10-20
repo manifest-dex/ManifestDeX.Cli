@@ -58,7 +58,7 @@ public static class SpectreCliConfigurator
                 .WithDescription("List games with bypass available (paginated, no credits).")
                 .WithAlias("l");
             bypass.AddCommand<BypassDownloadCommand>("download")
-                .WithDescription("Generate a temporary download link for a bypass (costs 1 credit).")
+                .WithDescription("Generate a temporary bypass download link with archive password details (costs 1 credit).")
                 .WithAlias("d");
         });
 

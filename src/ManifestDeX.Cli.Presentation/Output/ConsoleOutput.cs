@@ -50,6 +50,9 @@ public static class ConsoleOutput
                 {
                     var sizeStr = info.BypassDetails.FileSize.HasValue ? FormatBytes(info.BypassDetails.FileSize.Value) : "Unknown size";
                     infoTable.AddRow("Bypass", $"[green]Available[/] - Size: [yellow]{sizeStr}[/] - Info: {Markup.Escape(info.BypassDetails.AdditionalInfo)}");
+                    infoTable.AddRow("Bypass archive", FormatArchiveProtection(info.BypassDetails.IsPasswordProtected));
+                    if (info.BypassDetails.IsPasswordProtected == true)
+                        infoTable.AddRow("Archive password", Markup.Escape(info.BypassDetails.ArchivePassword ?? "manifestdex.com"));
                 }
                 else
                 {
@@ -70,13 +73,15 @@ public static class ConsoleOutput
                 AnsiConsole.MarkupLine($"[grey]Page {fixList.Page} of {fixList.TotalPages} (Total: {fixList.TotalCount})[/]");
                 break;
             case Domain.Entities.CliPaginatedList<Domain.Entities.BypassListItem> bypassList:
-                var bypassTable = new Table().RoundedBorder().AddColumns("AppId", "Name", "Info");
+                var bypassTable = new Table().RoundedBorder().AddColumns("AppId", "Name", "Info", "Archive", "Password");
                 foreach (var item in bypassList.Results)
                 {
                     bypassTable.AddRow(
                         $"[deepskyblue1]{item.AppId}[/]",
                         Markup.Escape(item.Name),
-                        Markup.Escape(item.AdditionalInfo));
+                        Markup.Escape(item.AdditionalInfo),
+                        FormatArchiveProtection(item.IsPasswordProtected),
+                        item.IsPasswordProtected == true ? Markup.Escape(item.ArchivePassword ?? "manifestdex.com") : "-");
                 }
                 AnsiConsole.Write(bypassTable);
                 AnsiConsole.MarkupLine($"[grey]Page {bypassList.Page} of {bypassList.TotalPages} (Total: {bypassList.TotalCount})[/]");
@@ -84,6 +89,10 @@ public static class ConsoleOutput
             case Domain.Entities.DownloadLink link:
                 AnsiConsole.MarkupLine($"[green]Download link generated successfully! (Expires in 30 minutes, single-use)[/]");
                 AnsiConsole.MarkupLine($"Link: [deepskyblue1]{Markup.Escape(link.Url)}[/]");
+                if (link.IsPasswordProtected.HasValue)
+                    AnsiConsole.MarkupLine($"Archive: {FormatArchiveProtection(link.IsPasswordProtected)}");
+                if (link.IsPasswordProtected == true)
+                    AnsiConsole.MarkupLine($"Archive password: [yellow]{Markup.Escape(link.ArchivePassword ?? "manifestdex.com")}[/]");
                 break;
             case IEnumerable<Domain.Entities.DepotKey> keys:
                 var keyTable = new Table().RoundedBorder().AddColumns("DepotId", "Key");
@@ -114,6 +123,13 @@ public static class ConsoleOutput
                 break;
         }
     }
+
+    private static string FormatArchiveProtection(bool? encrypted) => encrypted switch
+    {
+        true => "[yellow]Password-protected[/]",
+        false => "Unencrypted",
+        null => "Unknown"
+    };
 
     private static string FormatBytes(long bytes)
     {

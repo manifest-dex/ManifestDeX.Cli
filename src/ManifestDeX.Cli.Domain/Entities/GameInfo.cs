@@ -2,7 +2,8 @@ namespace ManifestDeX.Cli.Domain.Entities;
 
 public sealed record OnlineFixDetails(long TotalSize, bool IsSplitArchive, string Instructions);
 
-public sealed record BypassDetails(long? FileSize, string AdditionalInfo, DateTime LastUpdated);
+public sealed record BypassDetails(long? FileSize, string AdditionalInfo, DateTime LastUpdated,
+    bool? IsPasswordProtected = null, string? ArchivePassword = null);
 
 public sealed record GameInfo(
     uint AppId, 

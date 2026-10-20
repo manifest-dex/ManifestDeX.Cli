@@ -42,7 +42,9 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         var bypass = payload.BypassDetails != null ? new BypassDetails(
             payload.BypassDetails.FileSize,
             payload.BypassDetails.AdditionalInfo,
-            payload.BypassDetails.LastUpdated
+            payload.BypassDetails.LastUpdated,
+            payload.BypassDetails.IsPasswordProtected,
+            payload.BypassDetails.ArchivePassword
         ) : null;
 
         return new GameInfo(
@@ -207,6 +209,8 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         public long? FileSize { get; set; }
         public string AdditionalInfo { get; set; } = string.Empty;
         public DateTime LastUpdated { get; set; }
+        public bool? IsPasswordProtected { get; set; }
+        public string? ArchivePassword { get; set; }
     }
 
     private sealed class OnlineFixListItemDto
@@ -220,6 +224,8 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         public uint AppId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string AdditionalInfo { get; set; } = string.Empty;
+        public bool? IsPasswordProtected { get; set; }
+        public string? ArchivePassword { get; set; }
     }
 
     private sealed class PaginatedResponse<T>
@@ -237,6 +243,8 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
     {
         public bool Success { get; set; }
         public string DownloadUrl { get; set; } = string.Empty;
+        public bool? IsPasswordProtected { get; set; }
+        public string? ArchivePassword { get; set; }
         public string? Error { get; set; }
     }
 
@@ -425,7 +433,9 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         var results = payload.Results.Select(x => new BypassListItem(
             x.AppId,
             x.Name,
-            x.AdditionalInfo
+            x.AdditionalInfo,
+            x.IsPasswordProtected,
+            x.ArchivePassword
         )).ToList();
 
         return new CliPaginatedList<BypassListItem>(results, payload.Page, payload.PageSize, payload.TotalCount, payload.TotalPages);
@@ -446,7 +456,7 @@ public sealed class ManifestDexApiClient : IManifestDexApiClient
         var payload = await response.Content.ReadFromJsonAsync<DownloadLinkResponse>(JsonOptions, cancellationToken)
             ?? throw new CliException("Invalid server response.", CliExitCode.UnknownError);
 
-        return new DownloadLink(payload.DownloadUrl);
+        return new DownloadLink(payload.DownloadUrl, payload.IsPasswordProtected, payload.ArchivePassword);
     }
 
     private async Task<HttpResponseMessage> SendAuthenticatedPostAsync(string path, CancellationToken cancellationToken)
